@@ -48,12 +48,15 @@ class FeedbackSchema(BaseModel):
     strengths: List[str] = Field(description="Actionable strengths demonstrated during the interview")
     gaps: List[str] = Field(description="Identified knowledge gaps or areas of improvement")
     next: List[str] = Field(description="Recommended next steps for candidate growth")
+    overallScore: int = Field(description="Overall technical score from 0 to 100")
+    passed: bool = Field(description="True if the candidate passed (score >= 70), False otherwise")
 
 
 class InterviewRequest(BaseModel):
     sessionId: str
     candidate: Optional[Dict[str, Any]] = None
     message: Optional[str] = None
+    adminQuestions: Optional[List[Dict[str, Any]]] = None
 
 
 class InterviewResponse(BaseModel):
@@ -88,6 +91,7 @@ async def interview_endpoint(req: InterviewRequest):
             "history": [{"role": "model", "parts": [initial_reply]}],
             "question_count": 0,
             "days_covered": set(),
+            "adminQuestions": req.adminQuestions or [],
         }
         
         return InterviewResponse(reply=initial_reply, done=False)
@@ -104,8 +108,9 @@ async def interview_endpoint(req: InterviewRequest):
 
     session["question_count"] += 1
 
-    # Phase 3: Completion Check (>= 8 questions AND >= 4 curriculum days)
-    if session["question_count"] >= 8 and len(session["days_covered"]) >= 4:
+    # Phase 3: Completion Check (either max questions reached, or all admin questions asked)
+    total_expected = len(session.get("adminQuestions", [])) if session.get("adminQuestions") else 8
+    if session["question_count"] >= total_expected:
         feedback = generate_final_feedback(session)
         return InterviewResponse(
             reply="Interview completed successfully! Thank you for your responses. I have generated your comprehensive technical performance report below.",
@@ -141,24 +146,41 @@ def generate_next_question(session: Dict[str, Any]) -> tuple[str, Optional[int]]
     candidate_name = candidate.get('member', {}).get('name', 'Candidate')
     job_role = candidate.get('member', {}).get('jobRole', 'Engineer')
 
-    system_instruction = f"""
-    You are a Principal AI Technical Interviewer evaluating candidate {candidate_name} for the role of {job_role}.
+    admin_questions = session.get("adminQuestions", [])
+    questions_list_str = "\\n".join([f"{i+1}. {q.get('text')} (Topic: {q.get('category')})" for i, q in enumerate(admin_questions)])
     
-    Candidate Profile:
-    - Candidate Name: {candidate_name}
-    - Role Target: {job_role}
-    - Passed Curriculum Days: {passed_days}
-    
-    Current Progress:
-    - Questions Asked: {session['question_count']}
-    - Covered Days: {list(session['days_covered'])}
-    
-    Instructions for generating your response:
-    1. EVALUATE THE CANDIDATE'S PREVIOUS ANSWER: Give concise, professional feedback on what they got right, point out any technical flaws or missing edge cases, and rate their accuracy encouragingly.
-    2. ASK A targeted, adaptive follow-up technical question testing concepts from passed curriculum days ({passed_days}).
-    3. Make sure the tone is professional, conversational, and technical. Address the candidate by name when appropriate.
-    4. End your response with a tag indicating the curriculum day tested in this format: `[DAY:X]` (e.g., `[DAY:7]`).
-    """
+    if admin_questions:
+        system_instruction = f"""
+        You are a Principal AI Technical Interviewer evaluating candidate {candidate_name} for the role of {job_role}.
+        
+        The hiring manager has provided the following specific questions for this interview:
+        {questions_list_str}
+        
+        Current Progress:
+        - Questions Asked So Far: {session['question_count']}
+        
+        Instructions:
+        1. Evaluate the candidate's previous answer briefly and professionally.
+        2. Ask the NEXT unasked question from the hiring manager's list. Do not skip questions.
+        3. If the candidate's answer was incomplete, you may ask a quick follow-up before moving to the next official question.
+        4. End your response with `[DAY:1]` as a placeholder.
+        """
+    else:
+        system_instruction = f"""
+        You are a Principal AI Technical Interviewer evaluating candidate {candidate_name} for the role of {job_role}.
+        
+        Candidate Profile:
+        - Passed Curriculum Days: {passed_days}
+        
+        Current Progress:
+        - Questions Asked: {session['question_count']}
+        
+        Instructions for generating your response:
+        1. EVALUATE THE CANDIDATE'S PREVIOUS ANSWER: Give concise, professional feedback.
+        2. ASK A targeted, adaptive follow-up technical question testing concepts from passed curriculum days ({passed_days}).
+        3. Make sure the tone is professional. Address the candidate by name.
+        4. End your response with a tag indicating the curriculum day tested in this format: `[DAY:X]` (e.g., `[DAY:7]`).
+        """
 
     if not client:
         # Fallback question logic if API key isn't loaded
@@ -215,7 +237,9 @@ def generate_final_feedback(session: Dict[str, Any]) -> FeedbackSchema:
             summary=f"Candidate {candidate_name} completed all technical evaluation questions.",
             strengths=["Solid technical understanding across evaluated modules", "Clear explanations of core concepts"],
             gaps=["Needs deeper knowledge of model optimization and system design trade-offs"],
-            next=["Review advanced curriculum days on LLM quantization, RAG, and PEFT fine-tuning."]
+            next=["Review advanced curriculum days on LLM quantization, RAG, and PEFT fine-tuning."],
+            overallScore=85,
+            passed=True
         )
 
     prompt = f"""
@@ -229,6 +253,8 @@ def generate_final_feedback(session: Dict[str, Any]) -> FeedbackSchema:
     - strengths: Actionable list of strengths demonstrated in answers.
     - gaps: Specific technical gaps or weaknesses identified during the interview.
     - next: Actionable learning recommendations for growth.
+    - overallScore: A number from 0 to 100 representing their total technical score.
+    - passed: Boolean (true if score is 70 or above).
     """
 
     try:
@@ -248,5 +274,7 @@ def generate_final_feedback(session: Dict[str, Any]) -> FeedbackSchema:
             summary=f"Candidate {candidate_name} successfully completed the technical evaluation session.",
             strengths=["Demonstrated strong analytical problem solving and communication skills."],
             gaps=["Need further practice with distributed inference and memory optimization."],
-            next=["Study vLLM, Triton inference deployment, and flash attention."]
+            next=["Study vLLM, Triton inference deployment, and flash attention."],
+            overallScore=75,
+            passed=True
         )
