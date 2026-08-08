@@ -1,0 +1,34 @@
+[
+  {
+    "id": "cand-001",
+    "member": {
+      "name": "Alex Rivera",
+      "jobRole": "Machine Learning Engineer"
+    },
+    "missions": [
+      { "day": 1, "passed": true },
+      { "day": 3, "passed": true },
+      { "day": 7, "passed": true },
+      { "day": 12, "passed": true },
+      { "day": 18, "passed": true },
+      { "day": 22, "passed": true },
+      { "day": 28, "passed": true },
+      { "day": 31, "passed": true }
+    ]
+  },
+  {
+    "id": "cand-002",
+    "member": {
+      "name": "Sam Taylor",
+      "jobRole": "AI Solutions Architect"
+    },
+    "missions": [
+      { "day": 2, "passed": true },
+      { "day": 5, "passed": true },
+      { "day": 15, "passed": true },
+      { "day": 20, "passed": true },
+      { "day": 24, "passed": true },
+      { "day": 27, "passed": true }
+    ]
+  }
+]
