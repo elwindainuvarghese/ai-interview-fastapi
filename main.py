@@ -245,11 +245,11 @@ def generate_final_feedback(session: Dict[str, Any]) -> FeedbackSchema:
     if not client:
         return FeedbackSchema(
             summary=f"Candidate {candidate_name} completed all technical evaluation questions.",
-            strengths=["Solid technical understanding across evaluated modules", "Clear explanations of core concepts"],
-            gaps=["Needs deeper knowledge of model optimization and system design trade-offs"],
-            next=["Review advanced curriculum days on LLM quantization, RAG, and PEFT fine-tuning."],
-            overallScore=85,
-            passed=True
+            strengths=["Attempted the technical questions."],
+            gaps=["Responses lacked technical depth and precision."],
+            next=["Review the fundamentals of the evaluated topics."],
+            overallScore=40,
+            passed=False
         )
 
     prompt = f"""
@@ -277,14 +277,22 @@ def generate_final_feedback(session: Dict[str, Any]) -> FeedbackSchema:
                 temperature=0.2,
             )
         )
-        return FeedbackSchema.model_validate_json(response.text)
+        text = response.text.strip()
+        if text.startswith("```json"):
+            text = text[7:]
+        elif text.startswith("```"):
+            text = text[3:]
+        if text.endswith("```"):
+            text = text[:-3]
+        
+        return FeedbackSchema.model_validate_json(text.strip())
     except Exception as e:
         print("Gemini feedback generation error:", e)
         return FeedbackSchema(
             summary=f"Candidate {candidate_name} successfully completed the technical evaluation session.",
-            strengths=["Demonstrated strong analytical problem solving and communication skills."],
-            gaps=["Need further practice with distributed inference and memory optimization."],
-            next=["Study vLLM, Triton inference deployment, and flash attention."],
-            overallScore=75,
-            passed=True
+            strengths=["Attempted the technical questions."],
+            gaps=["Responses lacked technical depth and precision.", "Further review of core concepts is needed."],
+            next=["Study the fundamental principles of the role's required technologies."],
+            overallScore=40,
+            passed=False
         )
