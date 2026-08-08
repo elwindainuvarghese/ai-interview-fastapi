@@ -109,7 +109,7 @@ async def interview_endpoint(req: InterviewRequest):
     session["question_count"] += 1
 
     # Phase 3: Completion Check (either max questions reached, or all admin questions asked)
-    total_expected = len(session.get("adminQuestions", [])) if session.get("adminQuestions") else 8
+    total_expected = (len(session.get("adminQuestions", [])) + 1) if session.get("adminQuestions") else 8
     if session["question_count"] >= total_expected:
         feedback = generate_final_feedback(session)
         return InterviewResponse(
