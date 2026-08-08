@@ -184,12 +184,17 @@ def generate_next_question(session: Dict[str, Any]) -> tuple[str, Optional[int]]
 
     if not client:
         # Fallback question logic if API key isn't loaded
-        day_pool = passed_days or [1, 3, 7, 8, 12, 16, 22, 28, 31]
-        day_idx = (session['question_count'] - 1) % len(day_pool)
-        day_used = day_pool[day_idx]
-        topic_info = CURRICULUM_DATA.get(str(day_used), {}).get("topic", f"Day {day_used} Concepts")
-        question_text = f"Thank you for sharing that! Building on your response, can you detail your implementation approach for {topic_info}? [DAY:{day_used}]"
-        return question_text, day_used
+        if admin_questions:
+            idx = (session['question_count'] - 1) % len(admin_questions)
+            fallback_q = admin_questions[idx]
+            return f"{fallback_q.get('text')} [DAY:1]", 1
+        else:
+            day_pool = passed_days or [1, 3, 7, 8, 12, 16, 22, 28, 31]
+            day_idx = (session['question_count'] - 1) % len(day_pool)
+            day_used = day_pool[day_idx]
+            topic_info = CURRICULUM_DATA.get(str(day_used), {}).get("topic", f"Day {day_used} Concepts")
+            question_text = f"Thank you for sharing that! Building on your response, can you detail your implementation approach for {topic_info}? [DAY:{day_used}]"
+            return question_text, day_used
 
     contents = []
     for turn in session["history"]:
@@ -207,11 +212,16 @@ def generate_next_question(session: Dict[str, Any]) -> tuple[str, Optional[int]]
         text_response = response.text
     except Exception as e:
         print("Gemini API error:", e)
-        day_pool = passed_days or [1, 3, 7, 8, 12, 16, 22, 28, 31]
-        day_idx = (session['question_count'] - 1) % len(day_pool)
-        day_used = day_pool[day_idx]
-        topic_info = CURRICULUM_DATA.get(str(day_used), {}).get("topic", f"Day {day_used} Concepts")
-        return f"Thank you for sharing that! Building on your background, can you explain your technical approach for {topic_info}? [DAY:{day_used}]", day_used
+        if admin_questions:
+            idx = (session['question_count'] - 1) % len(admin_questions)
+            fallback_q = admin_questions[idx]
+            return f"{fallback_q.get('text')} [DAY:1]", 1
+        else:
+            day_pool = passed_days or [1, 3, 7, 8, 12, 16, 22, 28, 31]
+            day_idx = (session['question_count'] - 1) % len(day_pool)
+            day_used = day_pool[day_idx]
+            topic_info = CURRICULUM_DATA.get(str(day_used), {}).get("topic", f"Day {day_used} Concepts")
+            return f"Thank you for sharing that! Building on your background, can you explain your technical approach for {topic_info}? [DAY:{day_used}]", day_used
 
     day_used = None
 
