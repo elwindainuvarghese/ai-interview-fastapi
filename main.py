@@ -258,9 +258,11 @@ def generate_final_feedback(session: Dict[str, Any]) -> FeedbackSchema:
     Interview History:
     {json.dumps(session['history'], indent=2)}
     
+    IMPORTANT INSTRUCTION: Even if the candidate provided very short, irrelevant, or garbage answers (e.g., "hello", "dddd"), you MUST generate a valid JSON report matching the schema. In such cases, grade them strictly with a low score (e.g., 0-20), and clearly state in the summary and gaps that their answers were irrelevant, skipped, or insufficient.
+    
     Generate structured feedback in JSON format containing:
     - summary: Comprehensive executive summary of candidate technical competence.
-    - strengths: Actionable list of strengths demonstrated in answers.
+    - strengths: Actionable list of strengths demonstrated in answers (can be "None demonstrated" if poor).
     - gaps: Specific technical gaps or weaknesses identified during the interview.
     - next: Actionable learning recommendations for growth.
     - overallScore: A number from 0 to 100 representing their total technical score.
