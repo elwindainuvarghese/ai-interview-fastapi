@@ -16,7 +16,7 @@ if not GEMINI_API_KEY or GEMINI_API_KEY == "your_gemini_api_key_here":
 else:
     client = genai.Client(api_key=GEMINI_API_KEY)
 
-MODEL_NAME = "gemini-2.5-flash"
+MODEL_NAME = "gemini-2.0-flash"
 
 app = FastAPI(title="AI Interview Agent API")
 
@@ -84,7 +84,7 @@ async def interview_endpoint(req: InterviewRequest):
         candidate_name = candidate_info.get("member", {}).get("name", "Candidate User")
         job_role = candidate_info.get("member", {}).get("jobRole", "Senior Data Engineer")
 
-        initial_reply = f"Hello {candidate_name}! Welcome to your AI Technical Interview for the position of {job_role}. I'm your AI Interviewer powered by Gemini 2.5 Flash. To begin, could you please introduce yourself and share a brief overview of your background?"
+        initial_reply = f"Hello {candidate_name}! Welcome to your AI Technical Interview for the position of {job_role}. I'm your AI Interviewer powered by Gemini 2.0 Flash. To begin, could you please introduce yourself and share a brief overview of your background?"
 
         sessions[session_id] = {
             "candidate": candidate_info,
