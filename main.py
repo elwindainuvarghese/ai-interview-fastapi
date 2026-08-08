@@ -275,7 +275,6 @@ def generate_final_feedback(session: Dict[str, Any]) -> FeedbackSchema:
             contents=prompt,
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
-                response_schema=FeedbackSchema,
                 temperature=0.2,
             )
         )
@@ -291,10 +290,10 @@ def generate_final_feedback(session: Dict[str, Any]) -> FeedbackSchema:
     except Exception as e:
         print("Gemini feedback generation error:", e)
         return FeedbackSchema(
-            summary=f"Candidate {candidate_name} successfully completed the technical evaluation session.",
-            strengths=["Attempted the technical questions."],
-            gaps=["Responses lacked technical depth and precision.", "Further review of core concepts is needed."],
-            next=["Study the fundamental principles of the role's required technologies."],
-            overallScore=40,
+            summary=f"AI Scoring Failed due to an internal validation error: {str(e)}. The candidate's responses were likely too short or invalid to generate a structured report.",
+            strengths=["None identified due to scoring error."],
+            gaps=["Scoring failed. Please review the raw transcript."],
+            next=["N/A"],
+            overallScore=0,
             passed=False
         )
